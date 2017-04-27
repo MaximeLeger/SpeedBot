@@ -20,85 +20,85 @@ using Odx;
         private DiscordClient Client { get; set; }
         private CommandModule Commands { get; set; }
         
-        public static void Main()
+        //public static void Main()
+        //{
+        //DbTools db = new DbTools();
+
+        //bool b;
+
+        //b = db.CreateSpeedBotDb();
+
+
+        //Console.WriteLine("Le résultat est {0}", b);
+        //Console.ReadKey();
+
+        //}
+
+        public static void Main(string[] args)
         {
-        DbTools db = new DbTools();
+            if (!File.Exists("config.json"))
+                throw new FileNotFoundException("Bot's configuration file (config.json) was not found.");
 
-        bool b;
+            var json = string.Empty;
+            using (var fs = File.OpenRead("config.json"))
+            using (var sr = new StreamReader(fs))
+                json = sr.ReadToEnd();
 
-        b = db.CreateSpeedBotDb();
+            var cfg = JsonConvert.DeserializeObject<SpeedBotConfig>(json);
 
-
-        Console.WriteLine("Le résultat est {0}", b);
-        Console.ReadKey();
-
+            var bot = new SpeedBot(cfg);
+            bot.StartAsync().GetAwaiter().GetResult();
         }
 
-        //public static void Main(string[] args)
-        //{
-        //    if (!File.Exists("config.json"))
-        //        throw new FileNotFoundException("Bot's configuration file (config.json) was not found.");
+        public SpeedBot(SpeedBotConfig config)
+        {
+            this.Configuration = config;
+        }
 
-        //    var json = string.Empty;
-        //    using (var fs = File.OpenRead("config.json"))
-        //    using (var sr = new StreamReader(fs))
-        //        json = sr.ReadToEnd();
+        public async Task StartAsync()
+        {
+            this.Client = new DiscordClient(new DiscordConfig
+            {
+                Token = this.Configuration.Token,
+                TokenType = TokenType.Bot,
+                LogLevel = LogLevel.Debug,
+                AutoReconnect = true
+            });
 
-        //    var cfg = JsonConvert.DeserializeObject<SpeedBotConfig>(json);
+            this.Client.DebugLogger.LogMessageReceived += (o, e) =>
+            {
+                Console.WriteLine($"[{e.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")}] [{e.Level}] {e.Message}");
+            };
 
-        //    var bot = new SpeedBot(cfg);
-        //    bot.StartAsync().GetAwaiter().GetResult();
-        //}
+            // Let's enable the command service and
+            // configure it with # prefix.
+            this.Commands = this.Client.UseCommands(new CommandConfig
+            {
+                Prefix = "!",
+                SelfBot = false
+            });
 
-        //public SpeedBot(SpeedBotConfig config)
-        //{
-        //    this.Configuration = config;
-        //}
+            // Let's add a ping command, that responds 
+            // with pong
+            this.Commands.AddCommand("ping", async e =>
+            {
+                await e.Message.Respond("pong");
+            });
 
-        //public async Task StartAsync()
-        //{
-        //    this.Client = new DiscordClient(new DiscordConfig
-        //    {
-        //        Token = this.Configuration.Token,
-        //        TokenType = TokenType.Bot,
-        //        LogLevel = LogLevel.Debug,
-        //        AutoReconnect = true
-        //    });
+            // Now a hello command, that responds with 
+            // invoker's mention.
+            this.Commands.AddCommand("hello", async e =>
+            {
+                await e.Message.Respond($"Hello, {e.Author.Mention}!");
+            });
 
-        //    this.Client.DebugLogger.LogMessageReceived += (o, e) =>
-        //    {
-        //        Console.WriteLine($"[{e.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")}] [{e.Level}] {e.Message}");
-        //    };
+            // Now if you run the bot, try invoking 
+            // #ping or #hello.
 
-        //    // Let's enable the command service and
-        //    // configure it with # prefix.
-        //    this.Commands = this.Client.UseCommands(new CommandConfig
-        //    {
-        //        Prefix = "!",
-        //        SelfBot = false
-        //    });
+            await this.Client.Connect();
 
-        //    // Let's add a ping command, that responds 
-        //    // with pong
-        //    this.Commands.AddCommand("ping", async e =>
-        //    {
-        //        await e.Message.Respond("pong");
-        //    });
-
-        //    // Now a hello command, that responds with 
-        //    // invoker's mention.
-        //    this.Commands.AddCommand("hello", async e =>
-        //    {
-        //        await e.Message.Respond($"Hello, {e.Author.Mention}!");
-        //    });
-
-        //    // Now if you run the bot, try invoking 
-        //    // #ping or #hello.
-
-        //    await this.Client.Connect();
-
-        //    await Task.Delay(-1);
-        //}
+            await Task.Delay(-1);
+        }
 
         private void DebugLogger_LogMessageReceived(object sender, DebugLogMessageEventArgs e)
         {
