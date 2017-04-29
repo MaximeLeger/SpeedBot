@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Commands;
 using Newtonsoft.Json;
-using Odx;
+//using Odx;
 
 // Note that to use commands you will need to 
 // build the commands module from git first.
