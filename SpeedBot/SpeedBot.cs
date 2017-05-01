@@ -12,29 +12,19 @@ using Newtonsoft.Json;
 // Note that to use commands you will need to 
 // build the commands module from git first.
 // Then you need to reference it.
-
+    
 
     public sealed class SpeedBot
     {
-        private SpeedBotConfig Configuration { get; set; }
-        private DiscordClient Client { get; set; }
-        private CommandModule Commands { get; set; }
-        
-        //public static void Main()
-        //{
-        //DbTools db = new DbTools();
+        private SpeedBotConfig speedBot { get; set; }
+        private DiscordClient discordClient { get; set; }
+        private CommandModule commandModule { get; set; }
+     
+    /// <summary>
+    /// Constructeur de la classe SpeedBot
+    /// </summary>
 
-        //bool b;
-
-        //b = db.CreateSpeedBotDb();
-
-
-        //Console.WriteLine("Le résultat est {0}", b);
-        //Console.ReadKey();
-
-        //}
-
-        public static void Main(string[] args)
+    public static void Main(string[] args)
         {
             if (!File.Exists("config.json"))
                 throw new FileNotFoundException("Bot's configuration file (config.json) was not found.");
@@ -46,33 +36,40 @@ using Newtonsoft.Json;
 
             var cfg = JsonConvert.DeserializeObject<SpeedBotConfig>(json);
 
-            var bot = new SpeedBot(cfg);
+            SpeedBot bot = new SpeedBot(cfg);
             bot.StartAsync().GetAwaiter().GetResult();
+            
         }
 
         public SpeedBot(SpeedBotConfig config)
         {
-            this.Configuration = config;
+            this.speedBot = config;
         }
+        
+        //public JoinChannel(string p_strServer, string p_strChannel)
+        //{
+        //    this.Client.Servers.Single(s => s.Name == p_strServer).VoiceChannels.Single(v => v.Name == p_strChannel);
+        //    return this;
+        //}
 
         public async Task StartAsync()
         {
-            this.Client = new DiscordClient(new DiscordConfig
+            this.discordClient = new DiscordClient(new DiscordConfig
             {
-                Token = this.Configuration.Token,
+                Token = this.speedBot.Token,
                 TokenType = TokenType.Bot,
                 LogLevel = LogLevel.Debug,
                 AutoReconnect = true
             });
 
-            this.Client.DebugLogger.LogMessageReceived += (o, e) =>
+            this.discordClient.DebugLogger.LogMessageReceived += (o, e) =>
             {
                 Console.WriteLine($"[{e.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")}] [{e.Level}] {e.Message}");
             };
 
             // Let's enable the command service and
             // configure it with # prefix.
-            this.Commands = this.Client.UseCommands(new CommandConfig
+            this.commandModule = this.discordClient.UseCommands(new CommandConfig
             {
                 Prefix = "!",
                 SelfBot = false
@@ -80,14 +77,14 @@ using Newtonsoft.Json;
 
             // Let's add a ping command, that responds 
             // with pong
-            this.Commands.AddCommand("ping", async e =>
+            this.commandModule.AddCommand("ping", async e =>
             {
                 await e.Message.Respond("pong");
             });
 
             // Now a hello command, that responds with 
             // invoker's mention.
-            this.Commands.AddCommand("hello", async e =>
+            this.commandModule.AddCommand("hello", async e =>
             {
                 await e.Message.Respond($"Hello, {e.Author.Mention}!");
             });
@@ -95,7 +92,7 @@ using Newtonsoft.Json;
             // Now if you run the bot, try invoking 
             // #ping or #hello.
 
-            await this.Client.Connect();
+            await this.discordClient.Connect();
 
             await Task.Delay(-1);
         }
